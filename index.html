@@ -142,8 +142,10 @@
 <div class="modal-overlay" id="apiModal">
   <div class="modal">
     <h2>Connect TaskMind Agent</h2>
-    <p>Enter your Anthropic API key to power the AI agent. Your key stays in memory only and is sent exclusively to the Anthropic API.</p>
-    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." onkeydown="if(event.key==='Enter') saveApiKey()"/>
+    <p>Enter your <strong style="color:var(--accent3)">Google Gemini API key</strong> (free!) to power the AI agent.<br/><br/>
+    Get one free at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent)">aistudio.google.com/app/apikey</a><br/><br/>
+    Your key stays in memory only and is never saved.</p>
+    <input type="password" id="apiKeyInput" placeholder="AIza..." onkeydown="if(event.key==='Enter') saveApiKey()"/>
     <button class="modal-btn" onclick="saveApiKey()">Launch TaskMind →</button>
   </div>
 </div>
@@ -151,7 +153,7 @@
 <div class="container">
   <header>
     <div class="logo">TaskMind</div>
-    <div class="tagline">// agentic to-do list · natural language powered</div>
+    <div class="tagline">// agentic to-do list · powered by gemini ai · free</div>
   </header>
 
   <div class="chat-box">
@@ -193,7 +195,7 @@ let idCounter = 1;
 
 function saveApiKey() {
   const key = document.getElementById('apiKeyInput').value.trim();
-  if (!key.startsWith('sk-')) { alert('Please enter a valid Anthropic API key.'); return; }
+  if (!key.startsWith('AIza')) { alert('Please enter a valid Gemini API key (starts with AIza).'); return; }
   apiKey = key;
   document.getElementById('apiModal').style.display = 'none';
 }
@@ -309,28 +311,26 @@ Rules:
 - Keep reply concise and friendly`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: msg }]
-      })
-    });
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: 'user', parts: [{ text: msg }] }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 1000 }
+        })
+      }
+    );
 
     const data = await res.json();
     removeTyping();
 
     if (data.error) { addMsg('agent', `Error: ${data.error.message}`); document.getElementById('sendBtn').disabled = false; return; }
 
-    let raw = data.content[0].text.trim().replace(/```json\n?/g,'').replace(/```/g,'').trim();
+    let raw = data.candidates[0].content.parts[0].text.trim()
+      .replace(/```json\n?/g,'').replace(/```/g,'').trim();
     const parsed = JSON.parse(raw);
 
     for (const action of (parsed.actions || [])) {
