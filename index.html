@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TaskMind — AI To-Do Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a0f; --surface: #12121a; --surface2: #1a1a26;
+    --border: #2a2a3d; --accent: #7c6af7; --accent2: #f76a8a;
+    --accent3: #6af7c8; --text: #e8e8f0; --muted: #6b6b85; --done-bg: #0f1a14;
+  }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; padding: 40px 20px 80px; position: relative; overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(124,106,247,0.12) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  body::after {
+    content: ''; position: fixed; bottom: -100px; right: -100px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(247,106,138,0.08) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .container { width: 100%; max-width: 720px; position: relative; z-index: 1; }
+  header { margin-bottom: 48px; animation: fadeDown 0.6s ease both; }
+  .logo {
+    font-family: 'Syne', sans-serif; font-size: 2.8rem; font-weight: 800; letter-spacing: -1px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 60%, var(--accent3) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .tagline { color: var(--muted); font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 6px; }
+  .chat-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 20px; margin-bottom: 32px; animation: fadeUp 0.6s 0.1s ease both;
+  }
+  .chat-label { font-size: 0.68rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+  .chat-history { min-height: 60px; max-height: 220px; overflow-y: auto; margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .msg { font-size: 0.82rem; line-height: 1.5; padding: 10px 14px; border-radius: 10px; max-width: 90%; animation: fadeUp 0.3s ease both; }
+  .msg.user { background: rgba(124,106,247,0.15); border: 1px solid rgba(124,106,247,0.25); align-self: flex-end; color: #c5beff; }
+  .msg.agent { background: var(--surface2); border: 1px solid var(--border); align-self: flex-start; color: var(--text); }
+  .msg.agent .agent-tag { font-size: 0.65rem; color: var(--accent3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .input-row { display: flex; gap: 10px; }
+  input[type="text"] {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 16px; color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.84rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  input[type="text"]:focus { border-color: var(--accent); }
+  input[type="text"]::placeholder { color: var(--muted); }
+  button.send-btn {
+    background: var(--accent); border: none; border-radius: 10px; padding: 12px 20px;
+    color: #fff; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.84rem;
+    cursor: pointer; transition: background 0.2s, transform 0.1s;
+  }
+  button.send-btn:hover { background: #9a8af9; }
+  button.send-btn:active { transform: scale(0.97); }
+  button.send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .tasks-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; animation: fadeUp 0.6s 0.2s ease both; }
+  .tasks-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; letter-spacing: 0.05em; }
+  .stats { font-size: 0.72rem; color: var(--muted); }
+  .filter-tabs { display: flex; gap: 6px; margin-bottom: 16px; animation: fadeUp 0.6s 0.25s ease both; }
+  .tab {
+    padding: 6px 14px; border-radius: 20px; font-size: 0.72rem; letter-spacing: 0.08em;
+    text-transform: uppercase; cursor: pointer; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); font-family: 'DM Mono', monospace; transition: all 0.2s;
+  }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .task-list { display: flex; flex-direction: column; gap: 10px; animation: fadeUp 0.6s 0.3s ease both; }
+  .task-item {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px;
+    transition: border-color 0.2s, transform 0.15s; animation: slideIn 0.3s ease both;
+  }
+  .task-item:hover { border-color: rgba(124,106,247,0.4); transform: translateX(3px); }
+  .task-item.done { background: var(--done-bg); border-color: rgba(106,247,200,0.15); }
+  .task-item.done .task-text { text-decoration: line-through; color: var(--muted); }
+  .task-item.priority-high { border-left: 3px solid var(--accent2); }
+  .task-item.priority-medium { border-left: 3px solid #f7c06a; }
+  .task-item.priority-low { border-left: 3px solid var(--accent3); }
+  .check-btn {
+    width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border);
+    background: transparent; cursor: pointer; flex-shrink: 0; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-size: 10px;
+  }
+  .check-btn:hover { border-color: var(--accent3); }
+  .task-item.done .check-btn { background: var(--accent3); border-color: var(--accent3); color: #0a0a0f; }
+  .task-body { flex: 1; }
+  .task-text { font-size: 0.84rem; line-height: 1.5; color: var(--text); }
+  .task-meta { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+  .badge { font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 8px; border-radius: 20px; }
+  .badge.priority-high { background: rgba(247,106,138,0.15); color: var(--accent2); }
+  .badge.priority-medium { background: rgba(247,192,106,0.15); color: #f7c06a; }
+  .badge.priority-low { background: rgba(106,247,200,0.15); color: var(--accent3); }
+  .badge.due { background: rgba(124,106,247,0.15); color: var(--accent); }
+  .delete-btn {
+    background: transparent; border: none; color: var(--muted); cursor: pointer;
+    font-size: 14px; padding: 2px 6px; border-radius: 6px; transition: color 0.2s, background 0.2s; flex-shrink: 0;
+  }
+  .delete-btn:hover { color: var(--accent2); background: rgba(247,106,138,0.1); }
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 0.8rem; line-height: 1.8; }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 12px; opacity: 0.4; }
+  .typing-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: blink 1s infinite; margin: 0 2px; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100% { opacity:0.3 } 40% { opacity:1 } }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:none } }
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-16px) } to { opacity:1; transform:none } }
+  @keyframes slideIn { from { opacity:0; transform:translateX(-12px) } to { opacity:1; transform:none } }
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center; z-index: 100;
+  }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 36px; max-width: 440px; width: 90%; animation: fadeUp 0.4s ease both; }
+  .modal h2 {
+    font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .modal p { color: var(--muted); font-size: 0.78rem; line-height: 1.7; margin-bottom: 20px; }
+  .modal input { width: 100%; margin-bottom: 14px; }
+  .modal-btn {
+    width: 100%; padding: 13px; background: var(--accent); border: none; border-radius: 10px;
+    color: #fff; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: background 0.2s;
+  }
+  .modal-btn:hover { background: #9a8af9; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="modal-overlay" id="apiModal">
+  <div class="modal">
+    <h2>Connect TaskMind Agent</h2>
+    <p>Enter your Anthropic API key to power the AI agent. Your key stays in memory only and is sent exclusively to the Anthropic API.</p>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." onkeydown="if(event.key==='Enter') saveApiKey()"/>
+    <button class="modal-btn" onclick="saveApiKey()">Launch TaskMind →</button>
+  </div>
+</div>
+
+<div class="container">
+  <header>
+    <div class="logo">TaskMind</div>
+    <div class="tagline">// agentic to-do list · natural language powered</div>
+  </header>
+
+  <div class="chat-box">
+    <div class="chat-label">// talk to your agent</div>
+    <div class="chat-history" id="chatHistory">
+      <div class="msg agent">
+        <div class="agent-tag">▸ taskmind agent</div>
+        Hey! Tell me what you need to do. Try: <em>"Add buy groceries, high priority"</em>, <em>"Mark task 1 as done"</em>, <em>"Delete all completed tasks"</em>, or <em>"Remind me to call John tomorrow"</em>.
+      </div>
+    </div>
+    <div class="input-row">
+      <input type="text" id="userInput" placeholder="e.g. remind me to submit the report by friday, urgent..." onkeydown="if(event.key==='Enter') sendMessage()"/>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">Send →</button>
+    </div>
+  </div>
+
+  <div class="tasks-header">
+    <div class="tasks-title">// tasks</div>
+    <div class="stats" id="statsText">0 total · 0 done</div>
+  </div>
+
+  <div class="filter-tabs">
+    <button class="tab active" onclick="setFilter('all',this)">All</button>
+    <button class="tab" onclick="setFilter('active',this)">Active</button>
+    <button class="tab" onclick="setFilter('done',this)">Done</button>
+    <button class="tab" onclick="setFilter('high',this)">High Priority</button>
+  </div>
+
+  <div class="task-list" id="taskList">
+    <div class="empty-state"><div class="empty-icon">◎</div>No tasks yet.<br/>Talk to the agent above to get started.</div>
+  </div>
+</div>
+
+<script>
+let apiKey = '';
+let tasks = [];
+let currentFilter = 'all';
+let idCounter = 1;
+
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key.startsWith('sk-')) { alert('Please enter a valid Anthropic API key.'); return; }
+  apiKey = key;
+  document.getElementById('apiModal').style.display = 'none';
+}
+
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderTasks();
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderTasks() {
+  const list = document.getElementById('taskList');
+  let filtered = tasks;
+  if (currentFilter === 'active') filtered = tasks.filter(t => !t.done);
+  else if (currentFilter === 'done') filtered = tasks.filter(t => t.done);
+  else if (currentFilter === 'high') filtered = tasks.filter(t => t.priority === 'high');
+
+  document.getElementById('statsText').textContent =
+    `${tasks.length} total · ${tasks.filter(t=>t.done).length} done`;
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">◎</div>No tasks here.<br/>Tell the agent what you need to do.</div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(t => `
+    <div class="task-item ${t.done?'done':''} priority-${t.priority||'medium'}">
+      <button class="check-btn" onclick="toggleTask(${t.id})">${t.done?'✓':''}</button>
+      <div class="task-body">
+        <div class="task-text">${escHtml(t.text)}</div>
+        <div class="task-meta">
+          <span class="badge priority-${t.priority||'medium'}">${t.priority||'medium'}</span>
+          ${t.due ? `<span class="badge due">📅 ${escHtml(t.due)}</span>` : ''}
+          <span style="font-size:0.6rem;color:var(--muted)">id:${t.id}</span>
+        </div>
+      </div>
+      <button class="delete-btn" onclick="deleteTask(${t.id})">✕</button>
+    </div>
+  `).join('');
+}
+
+function toggleTask(id) {
+  const t = tasks.find(t => t.id === id);
+  if (t) { t.done = !t.done; renderTasks(); }
+}
+
+function deleteTask(id) {
+  tasks = tasks.filter(t => t.id !== id);
+  renderTasks();
+}
+
+function addMsg(role, html) {
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  if (role === 'agent') div.innerHTML = `<div class="agent-tag">▸ taskmind agent</div>${html}`;
+  else div.textContent = html;
+  document.getElementById('chatHistory').appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth' });
+}
+
+function showTyping() {
+  const div = document.createElement('div');
+  div.className = 'msg agent'; div.id = 'typing';
+  div.innerHTML = `<div class="agent-tag">▸ taskmind agent</div><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>`;
+  document.getElementById('chatHistory').appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth' });
+}
+
+function removeTyping() {
+  const el = document.getElementById('typing');
+  if (el) el.remove();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('userInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  if (!apiKey) { document.getElementById('apiModal').style.display = 'flex'; return; }
+
+  input.value = '';
+  addMsg('user', msg);
+  document.getElementById('sendBtn').disabled = true;
+  showTyping();
+
+  const systemPrompt = `You are TaskMind, an intelligent to-do list agent. Parse user commands and manage their task list.
+
+Current tasks (JSON):
+${JSON.stringify(tasks, null, 2)}
+
+Respond ONLY with a valid JSON object (no markdown fences, no extra text):
+{
+  "reply": "friendly short response",
+  "actions": [
+    { "type": "add", "text": "task description", "priority": "high|medium|low", "due": "date string or null" },
+    { "type": "complete", "id": <number> },
+    { "type": "delete", "id": <number> },
+    { "type": "clear_done" },
+    { "type": "none" }
+  ]
+}
+
+Rules:
+- "urgent/important/asap/!" → high priority; "whenever/someday/low" → low; default = medium
+- Parse natural language dates ("tomorrow", "friday", "next week") into readable strings
+- You can return multiple actions in one response
+- If user says "mark X as done" and the task text matches, find and complete it by id
+- If unsure of id, try to match by task text content
+- Keep reply concise and friendly`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: msg }]
+      })
+    });
+
+    const data = await res.json();
+    removeTyping();
+
+    if (data.error) { addMsg('agent', `Error: ${data.error.message}`); document.getElementById('sendBtn').disabled = false; return; }
+
+    let raw = data.content[0].text.trim().replace(/```json\n?/g,'').replace(/```/g,'').trim();
+    const parsed = JSON.parse(raw);
+
+    for (const action of (parsed.actions || [])) {
+      if (action.type === 'add') {
+        tasks.push({ id: idCounter++, text: action.text, priority: action.priority || 'medium', due: action.due || null, done: false });
+      } else if (action.type === 'complete') {
+        const t = tasks.find(t => t.id === action.id);
+        if (t) t.done = true;
+      } else if (action.type === 'delete') {
+        tasks = tasks.filter(t => t.id !== action.id);
+      } else if (action.type === 'clear_done') {
+        tasks = tasks.filter(t => !t.done);
+      }
+    }
+
+    renderTasks();
+    addMsg('agent', escHtml(parsed.reply || 'Done!'));
+
+  } catch (err) {
+    removeTyping();
+    addMsg('agent', `Something went wrong: ${err.message}`);
+  }
+
+  document.getElementById('sendBtn').disabled = false;
+  input.focus();
+}
+</script>
+</body>
+</html>
