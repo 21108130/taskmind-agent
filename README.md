@@ -109,6 +109,10 @@ Each message sends the **full current task list** as context so the agent always
 
 ---
 
+## website link for check out
+
+https://papaya-kitten-d76f59.netlify.app/
+
 ## 📄 License
 
 MIT — free to use, modify, and distribute.
