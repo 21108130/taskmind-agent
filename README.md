@@ -111,7 +111,7 @@ Each message sends the **full current task list** as context so the agent always
 
 ## website link for check out
 
-https://papaya-kitten-d76f59.netlify.app/
+https://taskmind-agent.netlify.app/
 
 ## 📄 License
 
