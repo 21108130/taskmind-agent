@@ -1,6 +1,6 @@
 # 🧠 TaskMind — Agentic AI To-Do List
 
-> A natural language to-do list powered by **Google Gemini AI (Free!)**. Talk to your task manager like a human — no buttons, no forms, just conversation.
+> A natural language to-do list powered by **Groq AI + Llama 3.3 (Free & Global!)**. Talk to your task manager like a human — no buttons, no forms, just conversation.
 
 ![TaskMind Screenshot](screenshot.png)
 
@@ -12,7 +12,7 @@
 - 🎯 **Smart Priority Detection** — Detects urgency from words like "urgent", "important", "whenever"
 - 📅 **Due Date Parsing** — Understands "tomorrow", "friday", "next week"
 - 🔍 **Filter Tasks** — View All / Active / Done / High Priority
-- ⚡ **Real-time AI Agent** — Powered by Gemini 2.0 Flash (FREE — 1500 requests/day)
+- ⚡ **Real-time AI Agent** — Powered by Groq + Llama 3.3 70B (FREE — 14,400 requests/day)
 - 🎨 **Beautiful Dark UI** — Minimal, sleek, production-grade design
 
 ---
@@ -34,13 +34,13 @@ open index.html
 npx serve .
 ```
 
-### 3. Get a FREE Gemini API Key
-1. Go to 👉 [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
-2. Sign in with your Google account
-3. Click **Create API Key**
-4. Copy the key (starts with `AIza...`) and paste it into the app when prompted
+### 3. Get a FREE Groq API Key
+1. Go to 👉 [console.groq.com](https://console.groq.com)
+2. Sign up with your Google or GitHub account (free)
+3. Click **API Keys → Create API Key**
+4. Copy the key (starts with `gsk_...`) and paste it into the app when prompted
 
-> ✅ **Completely free** — Google gives you 1500 requests/day at no cost. No credit card required.
+> ✅ **Completely free & works globally** — 14,400 requests/day, no credit card required.
 
 ---
 
@@ -63,7 +63,7 @@ npx serve .
 | Layer | Technology |
 |---|---|
 | Frontend | Vanilla HTML, CSS, JavaScript |
-| AI Agent | Gemini 2.0 Flash via Google AI API (Free) |
+| AI Agent | Llama 3.3 70B via Groq API (Free & Global) |
 | Fonts | Syne + DM Mono (Google Fonts) |
 | Hosting | Any static host (GitHub Pages, Netlify, Vercel) |
 
@@ -91,7 +91,7 @@ taskmind-agent/
 
 ## 🔑 Security Note
 
-Your API key is stored **only in memory** (JavaScript variable) and is never logged, saved to localStorage, or sent anywhere except directly to the Google Gemini API over HTTPS. It resets when you close the tab.
+Your API key is stored **only in memory** (JavaScript variable) and is never logged, saved to localStorage, or sent anywhere except directly to the Groq API over HTTPS. It resets when you close the tab.
 
 For production use, consider building a backend proxy so the API key is never exposed client-side.
 
@@ -100,12 +100,12 @@ For production use, consider building a backend proxy so the API key is never ex
 ## 🧩 How It Works (Agentic Loop)
 
 ```
-User Input → Gemini API → JSON Response → Execute Actions → Update UI
-                ↑                                               |
-                └──────── Updated task list fed back ──────────┘
+User Input → Groq API (Llama 3.3) → JSON Response → Execute Actions → Update UI
+                ↑                                                           |
+                └──────────── Updated task list fed back ──────────────────┘
 ```
 
-Each message sends the **full current task list** as context so Gemini always knows the current state. Gemini responds with structured JSON containing a `reply` and a list of `actions` (add/complete/delete/clear_done) that the app executes.
+Each message sends the **full current task list** as context so the agent always knows the current state. The model responds with structured JSON containing a `reply` and a list of `actions` (add/complete/delete/clear_done) that the app executes instantly.
 
 ---
 
